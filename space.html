@@ -19,7 +19,7 @@
       const redAsteroidColor = "red";
       const greyAsteroidSpeed = 1;
       const greyAsteroidColor = "grey";
-      const blueAsteroidSpeed = 2;
+      const blueAsteroidSpeed = 3;
       const blueAsteroidColor = "blue";
 
       let spaceshipX = canvas.width / 2;
@@ -105,7 +105,6 @@
       setInterval(addRedAsteroid, 2000);
 
       class BlueAsteroid extends Asteroid {
-        // TODO: Fix BlueAsteroid not showing on the canvas
         constructor(x, y, velocityX, velocityY) {
           super(x, y, velocityX, velocityY);
           this.fillStyle = "blue";
@@ -116,7 +115,7 @@
         update() {
           this.x += this.velocityX * blueAsteroidSpeed;
           this.y +=
-            this.velocityY * blueAsteroidSpeed +
+            this.velocityY * blueAsteroidSpeed * 0.7 +
             Math.sin(this.angle) * this.amplitude;
           this.angle += 0.1;
 
@@ -143,7 +142,7 @@
       }
 
       function addBlueAsteroid() {
-        let x = Math.floor(Math.random() * canvas.width);
+        let x = canvas.width;
         let y = Math.floor(Math.random() * canvas.height);
         let velocityX = blueAsteroidSpeed;
         let velocityY = (Math.random() - 0.5) * 2;
@@ -192,49 +191,59 @@
         spaceshipVelocityY *= friction;
       }
 
-      //TODO: Make the ship look better
       function drawSpaceship() {
+        //Draw a great looking spaceship where the shapes connect at the correct points
         ctx.beginPath();
 
         // Body of spaceship
-        ctx.arc(spaceshipX + 7, spaceshipY, 23, 0, 2 * Math.PI);
+        ctx.moveTo(spaceshipX - 20, spaceshipY + 20);
+        ctx.lineTo(spaceshipX - 20, spaceshipY - 20);
+        ctx.lineTo(spaceshipX + 20, spaceshipY);
+        ctx.closePath();
+        ctx.fillStyle = "blue";
+        ctx.fill();
+
+        // Cockpit
+        ctx.beginPath();
+        ctx.arc(spaceshipX - 10, spaceshipY, 10, 0, 2 * Math.PI);
+        ctx.fillStyle = "red";
+        ctx.fill();
+        ctx.closePath();
+
+        // Left Wing
+        ctx.beginPath();
+        ctx.moveTo(spaceshipX - 20, spaceshipY + 20);
+        ctx.lineTo(spaceshipX - 35, spaceshipY + 10);
+        ctx.lineTo(spaceshipX - 20, spaceshipY - 20);
         ctx.fillStyle = "blue";
         ctx.fill();
         ctx.closePath();
 
-        // Cockpit
+        // Right Wing
         ctx.beginPath();
-
-        ctx.moveTo(spaceshipX - 15, spaceshipY - 10);
-        ctx.lineTo(spaceshipX - 15, spaceshipY + 10);
-        ctx.lineTo(spaceshipX - 25, spaceshipY);
-        ctx.fillStyle = "red";
+        ctx.moveTo(spaceshipX - 20, spaceshipY + 20);
+        ctx.lineTo(spaceshipX - 35, spaceshipY - 10);
+        ctx.lineTo(spaceshipX - 20, spaceshipY - 20);
+        ctx.fillStyle = "blue";
         ctx.fill();
-        ctx.closePath();
-        ctx.beginPath();
-
-        // Thruster 1
-        ctx.moveTo(spaceshipX + 25, spaceshipY + 15);
-        ctx.lineTo(spaceshipX + 35, spaceshipY + 25);
-        ctx.lineTo(spaceshipX + 15, spaceshipY + 25);
-        ctx.fillStyle = "red";
-        ctx.fill();
-        ctx.closePath();
-        ctx.beginPath();
-
-        // Thruster 2
-        ctx.moveTo(spaceshipX + 25, spaceshipY - 15);
-        ctx.lineTo(spaceshipX + 35, spaceshipY - 25);
-        ctx.lineTo(spaceshipX + 15, spaceshipY - 25);
-        ctx.fill();
-
         ctx.closePath();
       }
+
+      const numberOfStars = 100;
+      let stars = [];
 
       function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = "#000000";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        for (let i = 0; i < stars.length; i++) {
+          let star = stars[i];
+          ctx.fillStyle = "white";
+          ctx.beginPath();
+          ctx.arc(star.x, star.y, star.size, 0, 2 * Math.PI);
+          ctx.fill();
+        }
 
         drawSpaceship();
         ctx.fillStyle = "green";
@@ -249,6 +258,18 @@
         ctx.fillText("Score: " + score, canvas.width - 20, 20);
       }
 
+      function updateStars() {
+        for (let i = 0; i < stars.length; i++) {
+          let star = stars[i];
+          star.size += (Math.random() - 0.5) * 0.3;
+          if (star.size < 0) {
+            star.size = 0;
+          }
+        }
+      }
+
+      setInterval(updateStars, 50);
+
       function update() {
         updateSpaceship();
         for (let i = 0; i < asteroids.length; i++) {
@@ -257,9 +278,10 @@
           if (
             Math.sqrt(
               Math.pow(asteroid.x - spaceshipX, 2) +
-                Math.pow(asteroid.y - spaceshipY, 2)
+                Math.pow(asteroid.y - spaceshipY - 10, 2)
             ) < 45
           ) {
+            //DED X(
             return;
           }
         }
@@ -277,10 +299,18 @@
           asteroids.push(new GreyAsteroid(x, y, velocityX, velocityY));
         }
         update();
+
+        for (let i = 0; i < numberOfStars; i++) {
+          let x = Math.random() * canvas.width;
+          let y = Math.random() * canvas.height;
+          let size = Math.random() * 1.5;
+          stars.push({ x: x, y: y, size: size });
+        }
       }
       function restartGame() {
         score = 0;
         asteroids = [];
+        stars = [];
         startGame();
       }
       document.addEventListener("keydown", function (event) {
