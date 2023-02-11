@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      #canvas {
+        border: 1px solid black;
+      }
+    </style>
+  </head>
+  <body onload="startGame()">
+    <canvas id="canvas" width="1300" height="900"></canvas>
+    <script>
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+
+      let asteroids = [];
+      let score = 0;
+      const redAsteroidSpeed = 4;
+      const redAsteroidColor = "red";
+      const greyAsteroidSpeed = 1;
+      const greyAsteroidColor = "grey";
+      const blueAsteroidSpeed = 2;
+      const blueAsteroidColor = "blue";
+
+      let spaceshipX = canvas.width / 2;
+      let spaceshipY = canvas.height / 2;
+      let spaceshipVelocityX = 0;
+      let spaceshipVelocityY = 0;
+
+      let spaceshipAcceleration = 4;
+      let maxSpeed = 20;
+      let friction = 0.97;
+
+      class Asteroid {
+        constructor(x, y, velocityX, velocityY) {
+          this.x = x;
+          this.y = y;
+          this.velocityX = velocityX;
+          this.velocityY = velocityY;
+        }
+
+        update() {
+          this.x += this.velocityX * greyAsteroidSpeed;
+          this.y += this.velocityY * greyAsteroidSpeed;
+
+          if (this.x > canvas.width || this.x < 0) {
+            this.velocityX = -this.velocityX;
+          }
+          if (this.y > canvas.height || this.y < 0) {
+            this.velocityY = -this.velocityY;
+          }
+        }
+
+        draw() {}
+      }
+
+      class GreyAsteroid extends Asteroid {
+        constructor(x, y, velocityX, velocityY) {
+          super(x, y, velocityX, velocityY);
+          this.fillStyle = redAsteroidColor;
+        }
+
+        draw() {
+          ctx.beginPath();
+          for (let i = 0; i < 20; i++) {
+            let angle = (i / 20) * Math.PI * 2 + (Math.random() * Math.PI) / 8;
+            let x = this.x + 20 * Math.cos(angle);
+            let y = this.y + 20 * Math.sin(angle);
+            ctx.lineTo(x, y);
+          }
+          ctx.closePath();
+          ctx.fillStyle = greyAsteroidColor;
+          ctx.fill();
+        }
+      }
+
+      class RedAsteroid extends Asteroid {
+        constructor(x, y, velocityX, velocityY) {
+          super(x, y, velocityX, velocityY);
+          this.fillStyle = redAsteroidColor;
+        }
+
+        draw() {
+          ctx.beginPath();
+          for (let i = 0; i < 20; i++) {
+            let angle = (i / 20) * Math.PI * 2 + (Math.random() * Math.PI) / 8;
+            let x = this.x + 20 * Math.cos(angle);
+            let y = this.y + 20 * Math.sin(angle);
+            ctx.lineTo(x, y);
+          }
+          ctx.closePath();
+          ctx.fillStyle = this.fillStyle;
+          ctx.fill();
+        }
+      }
+
+      function addRedAsteroid() {
+        let x = canvas.width;
+        let y = Math.floor(Math.random() * canvas.height);
+        let velocityX = -redAsteroidSpeed;
+        let velocityY = 0;
+        asteroids.push(new RedAsteroid(x, y, velocityX, velocityY));
+      }
+
+      setInterval(addRedAsteroid, 2000);
+
+      class BlueAsteroid extends Asteroid {
+        // TODO: Fix BlueAsteroid not showing on the canvas
+        constructor(x, y, velocityX, velocityY) {
+          super(x, y, velocityX, velocityY);
+          this.fillStyle = "blue";
+          this.angle = 0;
+          this.amplitude = 20;
+        }
+
+        update() {
+          this.x += this.velocityX * blueAsteroidSpeed;
+          this.y +=
+            this.velocityY * blueAsteroidSpeed +
+            Math.sin(this.angle) * this.amplitude;
+          this.angle += 0.1;
+
+          if (this.x > canvas.width || this.x < 0) {
+            this.velocityX = -this.velocityX;
+          }
+          if (this.y > canvas.height || this.y < 0) {
+            this.velocityY = -this.velocityY;
+          }
+        }
+
+        draw() {
+          ctx.beginPath();
+          for (let i = 0; i < 20; i++) {
+            let angle = (i / 20) * Math.PI * 2 + (Math.random() * Math.PI) / 8;
+            let x = this.x + 20 * Math.cos(angle);
+            let y = this.y + 20 * Math.sin(angle);
+            ctx.lineTo(x, y);
+          }
+          ctx.closePath();
+          ctx.fillStyle = this.fillStyle;
+          ctx.fill();
+        }
+      }
+
+      function addBlueAsteroid() {
+        let x = Math.floor(Math.random() * canvas.width);
+        let y = Math.floor(Math.random() * canvas.height);
+        let velocityX = blueAsteroidSpeed;
+        let velocityY = (Math.random() - 0.5) * 2;
+        asteroids.push(new BlueAsteroid(x, y, velocityX, velocityY));
+      }
+
+      setInterval(addBlueAsteroid, 5000);
+      // TODO: Make the ship move better diagonally
+      // Move spaceship
+      document.onkeydown = function (event) {
+        if (event.keyCode === 37) {
+          // Move left
+          spaceshipVelocityX -= spaceshipAcceleration;
+        } else if (event.keyCode === 38) {
+          // Move up
+          spaceshipVelocityY -= spaceshipAcceleration;
+        } else if (event.keyCode === 39) {
+          // Move right
+          spaceshipVelocityX += spaceshipAcceleration;
+        } else if (event.keyCode === 40) {
+          // Move down
+          spaceshipVelocityY += spaceshipAcceleration;
+        }
+      };
+
+      function updateSpaceship() {
+        spaceshipX += spaceshipVelocityX;
+        spaceshipY += spaceshipVelocityY;
+
+        // Limit the speed of the spaceship
+        if (spaceshipVelocityX > maxSpeed) {
+          spaceshipVelocityX = maxSpeed;
+        }
+        if (spaceshipVelocityX < -maxSpeed) {
+          spaceshipVelocityX = -maxSpeed;
+        }
+        if (spaceshipVelocityY > maxSpeed) {
+          spaceshipVelocityY = maxSpeed;
+        }
+        if (spaceshipVelocityY < -maxSpeed) {
+          spaceshipVelocityY = -maxSpeed;
+        }
+
+        // Apply friction to slow down the spaceship over time
+        spaceshipVelocityX *= friction;
+        spaceshipVelocityY *= friction;
+      }
+
+      //TODO: Make the ship look better
+      function drawSpaceship() {
+        ctx.beginPath();
+
+        // Body of spaceship
+        ctx.arc(spaceshipX + 7, spaceshipY, 23, 0, 2 * Math.PI);
+        ctx.fillStyle = "blue";
+        ctx.fill();
+        ctx.closePath();
+
+        // Cockpit
+        ctx.beginPath();
+
+        ctx.moveTo(spaceshipX - 15, spaceshipY - 10);
+        ctx.lineTo(spaceshipX - 15, spaceshipY + 10);
+        ctx.lineTo(spaceshipX - 25, spaceshipY);
+        ctx.fillStyle = "red";
+        ctx.fill();
+        ctx.closePath();
+        ctx.beginPath();
+
+        // Thruster 1
+        ctx.moveTo(spaceshipX + 25, spaceshipY + 15);
+        ctx.lineTo(spaceshipX + 35, spaceshipY + 25);
+        ctx.lineTo(spaceshipX + 15, spaceshipY + 25);
+        ctx.fillStyle = "red";
+        ctx.fill();
+        ctx.closePath();
+        ctx.beginPath();
+
+        // Thruster 2
+        ctx.moveTo(spaceshipX + 25, spaceshipY - 15);
+        ctx.lineTo(spaceshipX + 35, spaceshipY - 25);
+        ctx.lineTo(spaceshipX + 15, spaceshipY - 25);
+        ctx.fill();
+
+        ctx.closePath();
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#000000";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        drawSpaceship();
+        ctx.fillStyle = "green";
+        for (let i = 0; i < asteroids.length; i++) {
+          asteroids[i].draw();
+        }
+
+        ctx.fillStyle = "green";
+        ctx.font = "20px Arial";
+        ctx.textAlign = "right";
+        ctx.textBaseline = "top";
+        ctx.fillText("Score: " + score, canvas.width - 20, 20);
+      }
+
+      function update() {
+        updateSpaceship();
+        for (let i = 0; i < asteroids.length; i++) {
+          let asteroid = asteroids[i];
+          asteroid.update();
+          if (
+            Math.sqrt(
+              Math.pow(asteroid.x - spaceshipX, 2) +
+                Math.pow(asteroid.y - spaceshipY, 2)
+            ) < 45
+          ) {
+            return;
+          }
+        }
+        score++;
+        draw();
+        requestAnimationFrame(update);
+      }
+
+      function startGame() {
+        for (let i = 0; i < 20; i++) {
+          let x = Math.random() * canvas.width;
+          let y = Math.random() * canvas.height;
+          let velocityX = (Math.random() - 0.5) * 5;
+          let velocityY = (Math.random() - 0.5) * 5;
+          asteroids.push(new GreyAsteroid(x, y, velocityX, velocityY));
+        }
+        update();
+      }
+      function restartGame() {
+        score = 0;
+        asteroids = [];
+        startGame();
+      }
+      document.addEventListener("keydown", function (event) {
+        if (event.code === "ControlRight") {
+          restartGame();
+        }
+      });
+    </script>
+  </body>
+</html>
