@@ -14,6 +14,7 @@
       const ctx = canvas.getContext("2d");
 
       let asteroids = [];
+      let bullets = [];
       let score = 0;
       let gameOver = false;
 
@@ -209,7 +210,15 @@
       // TODO: Make the ship move better diagonally
       // Move spaceship
       document.onkeydown = function (event) {
-        if (event.keyCode === 37) {
+        if (event.keyCode === 32) {
+          let bulletX = spaceshipX;
+          let bulletY = spaceshipY - spaceshipHeight / 2;
+          let bulletVelocityX = 0;
+          let bulletVelocityY = -10;
+          bullets.push(
+            new Bullet(bulletX, bulletY, bulletVelocityX, bulletVelocityY)
+          );
+        } else if (event.keyCode === 37) {
           // Move left
           spaceshipVelocityX -= spaceshipAcceleration;
         } else if (event.keyCode === 38) {
@@ -223,6 +232,40 @@
           spaceshipVelocityY += spaceshipAcceleration;
         }
       };
+
+      function handleKeyDown(event) {
+        if (event.code === "Space") {
+          let bulletX = spaceshipX;
+          let bulletY = spaceshipY - spaceshipHeight / 2;
+          let bulletVelocityX = 0;
+          let bulletVelocityY = -10;
+          bullets.push(
+            new Bullet(bulletX, bulletY, bulletVelocityX, bulletVelocityY)
+          );
+        }
+      }
+
+      class Bullet {
+        constructor(x, y, velocityX, velocityY) {
+          this.x = x;
+          this.y = y;
+          this.velocityX = velocityX;
+          this.velocityY = velocityY;
+          this.size = 10;
+        }
+
+        update() {
+          this.x += this.velocityX;
+          this.y += this.velocityY;
+        }
+
+        draw() {
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+          ctx.fillStyle = "red";
+          ctx.fill();
+        }
+      }
 
       function updateSpaceship() {
         spaceshipX += spaceshipVelocityX;
@@ -306,7 +349,10 @@
         for (let i = 0; i < asteroids.length; i++) {
           asteroids[i].draw();
         }
-
+        // move bullet drawing code to the global draw function
+        for (let i = 0; i < bullets.length; i++) {
+          bullets[i].draw();
+        }
         ctx.fillStyle = "green";
         ctx.font = "20px Arial";
         ctx.textAlign = "right";
@@ -315,15 +361,59 @@
       }
 
       function updateStars() {
+        percentSuperNova = 0.01;
+        superNovaSize = 10;
+        maxSize = 1;
         for (let i = 0; i < stars.length; i++) {
           let star = stars[i];
           star.size += (Math.random() - 0.5) * 0.3;
-          if (star.size < 0) {
-            star.size = 0;
+          if (star.size >= superNovaSize) {
+            i = removeAndReplaceStar(i);
           }
+          if (star.size >= 2 * maxSize) {
+            star.size += superNovaSize / 10;
+          } else if (star.size < 0) {
+            if (Math.random() < percentSuperNova) star.size = 2 * maxSize;
+            else i = removeAndReplaceStar(i);
+          } else if (star.size > maxSize) star.size = maxSize;
         }
       }
 
+      function removeAndReplaceStar(i) {
+        stars.splice(i, 1);
+        i--;
+        makeStar();
+        return i;
+      }
+
+      function updateBullets() {
+        for (let i = 0; i < bullets.length; i++) {
+          let bullet = bullets[i];
+          bullet.update();
+
+          for (let j = 0; j < asteroids.length; j++) {
+            let asteroid = asteroids[j];
+            if (
+              bullet.x > asteroid.x - asteroidRadius &&
+              bullet.x < asteroid.x + asteroidRadius &&
+              bullet.y > asteroid.y - asteroidRadius &&
+              bullet.y < asteroid.y + asteroidRadius
+            ) {
+              bullets.splice(i, 1);
+              i--;
+              asteroids.splice(j, 1);
+              j--;
+              score += 10;
+              break;
+            }
+          }
+
+          if (bullet.y < 0) {
+            bullets.splice(i, 1);
+            i--;
+          }
+        }
+      }
       function update() {
         if (gameOver) return;
 
@@ -341,6 +431,7 @@
             gameOver = true;
           }
         }
+        updateBullets();
         score++;
         draw();
         requestAnimationFrame(update);
@@ -357,15 +448,19 @@
         update();
 
         for (let i = 0; i < numberOfStars; i++) {
-          let x = Math.random() * canvas.width;
-          let y = Math.random() * canvas.height;
-          let size = Math.random() * 1.5;
-          stars.push({ x: x, y: y, size: size });
+          makeStar();
         }
         setInterval(updateStars, 50);
         setInterval(addRedAsteroid, 2000);
         setInterval(addBlueAsteroid, 5000);
         setInterval(addGreenAsteroid, 10000);
+      }
+
+      function makeStar() {
+        let x = Math.random() * canvas.width;
+        let y = Math.random() * canvas.height;
+        let size = Math.random() * 1.5;
+        stars.push({ x: x, y: y, size: size });
       }
 
       function restartGame() {
